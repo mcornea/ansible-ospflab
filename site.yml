@@ -1,0 +1,90 @@
+---
+- hosts: localhost
+  remote_user: marius
+  sudo: yes
+
+  tasks:
+  - name: Install Apache
+    yum: name=httpd state=installed
+ 
+  - name: Install Git
+    yum: name=git state=installed
+
+  - name: Install paramiko
+    yum: name=python-paramiko state=installed
+ 
+  - name: Start Apache
+    service: name=httpd state=started enabled=yes
+
+  - name: Clone netmiko
+    git: repo=https://github.com/ktbyers/netmiko.git dest=/opt/netmiko
+
+  - name: Install netmiko
+    command: chdir=/opt/netmiko python setup.py install
+
+  - name: Create netmiko script 
+    template: src=netmiko.j2 dest=/opt/remote_cmd
+
+  - name: Generate config file
+    template: src=config.j2 dest=/var/www/html/{{ item.name }}.config
+    with_items: routers
+
+  - name: Connect to routers and pull the config
+    shell: python /opt/remote_cmd {{ item.mgmt_ip }} {{ item.mgmt_user }} {{ item.mgmt_pass }} 'copy http://{{ ansible_eth0.ipv4.address }}/{{ item.name }}.config running-config'
+    with_items: routers
+
+  vars:
+   routers:
+     - name: "rtr-A"
+       mgmt_ip: "192.168.0.81"
+       mgmt_user: "admin"
+       mgmt_pass: "parola"
+       int:
+         - name: "GigabitEthernet0/1"
+           address: "10.0.0.1"
+           netmask: "255.255.255.252"
+           ospf: "yes"
+         - name: "GigabitEthernet0/2"
+           address: "10.0.0.5"
+           netmask: "255.255.255.252"
+           ospf: "yes"
+         - name: "Loopback0"
+           address: "1.1.1.1"
+           netmask: "255.255.255.0"
+           ospf: "yes"
+
+     - name: "rtr-B"
+       mgmt_ip: "192.168.0.78"
+       mgmt_user: "admin"
+       mgmt_pass: "parola"
+       int:
+        - name: "GigabitEthernet0/1"
+          address: "10.0.0.2"
+          netmask: "255.255.255.252"
+          ospf: "yes"
+        - name: "GigabitEthernet0/2"
+          address: "10.0.0.9"
+          netmask: "255.255.255.252"
+          ospf: "yes"
+        - name: "Loopback0"
+          address: "2.2.2.2"
+          netmask: "255.255.255.0"
+          ospf: "yes"
+
+     - name: "rtr-C"
+       mgmt_ip: "192.168.0.79"
+       mgmt_user: "admin"
+       mgmt_pass: "parola"
+       int:
+         - name: "GigabitEthernet0/1"
+           address: "10.0.0.6"
+           netmask: "255.255.255.252"
+           ospf: "yes"
+         - name: "GigabitEthernet0/2"
+           address: "10.0.0.10"
+           netmask: "255.255.255.252"
+           ospf: "yes"
+         - name: "Loopback0"
+           address: "3.3.3.3"
+           netmask: "255.255.255.0"
+           ospf: "no"

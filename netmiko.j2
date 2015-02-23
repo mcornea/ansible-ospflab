@@ -1,0 +1,21 @@
+#!/usr/bin/env python
+import netmiko
+import sys
+
+cisco_881 = {
+	'device_type': 'cisco_ios',
+	'ip':   sys.argv[1],
+	'username': sys.argv[2],
+	'password': sys.argv[3],
+	'secret': 'secret',
+	'verbose': False,
+}
+
+SSHClass = netmiko.ssh_dispatcher(device_type=cisco_881['device_type'])
+
+net_connect = SSHClass(**cisco_881)
+
+config_commands = [ 'file prompt quiet' ] 
+output = net_connect.send_config_set(config_commands)
+
+output = net_connect.send_command(sys.argv[4])

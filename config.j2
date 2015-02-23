@@ -1,0 +1,12 @@
+{% for iface in item.int %}
+interface {{ iface.name }}
+no shutdown 
+ip address {{ iface.address }} {{ iface.netmask }}
+{% endfor %}
+
+router ospf 1
+{% for iface in item.int %}
+{% if iface.ospf == "yes" %}
+network {{ iface.address }} 0.0.0.0 area 0
+{% endif %}
+{% endfor %}
